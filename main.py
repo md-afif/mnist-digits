@@ -13,6 +13,15 @@ test = pd.read_csv("data/test.csv")
 train_df = train.ix[:, "pixel0":"pixel783"]
 train_labels = train.ix[:,"label"]
 
+
+# Checking for missing data
+def check_missing_data(df):
+    return df.isnull().sum().sort_values(ascending=False)
+
+check_missing_data(train_df)
+check_missing_data(test) # No missing data in both train and test sets
+
+
 # Converting dataframe into array for data manipulation
 train_arr = train_df.values
 test_arr = test.values
@@ -76,12 +85,11 @@ model = keras.Sequential([
     keras.layers.Dropout(rate=0.25),
     keras.layers.Flatten(),
     keras.layers.Dense(256, activation="relu"),
-    keras.layers.Dropout(rate=0.25),
-    keras.layers.Dense(128, activation="relu"),
     keras.layers.Dropout(rate=0.5),
     keras.layers.Dense(10, activation="softmax")
 ])
 
+# Compiling model with default settings for Adam optimizer
 model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",
                        metrics=["accuracy"])
 
@@ -93,6 +101,7 @@ lr_annealer = keras.callbacks.ReduceLROnPlateau(monitor='val_acc', patience=3, v
 history = model.fit_generator(image_gen.flow(X_train, y_train), epochs=20,
                               validation_data=(X_val, y_val), callbacks=[lr_annealer])
 
+model.save("models/first_run.h5")
 
 # Plotting the losses to inspect model fit
 def plot_history(histories, key='sparse_categorical_crossentropy'):
@@ -121,14 +130,25 @@ test_loss, test_acc = model.evaluate(X_val, y_val)
 print('Test accuracy:', test_acc)
 print('Test loss:', test_loss)
 
+
+# Recreating models and checking accuracy
+# model = keras.models.load_model('models/first_run.h5')
+# model.summary()
+# loss, acc = model.evaluate(X_val, y_val)
+# print("Restored model, accuracy: {:5.2f}%".format(100*acc))
+
+
 # SUBMISSION
 # Predict results
-results = model.predict(test_arr)
-
-# Select the index with the maximum probability
-results = np.argmax(results, axis=1)
-
+# results = model.predict(test_arr)
+#
+# # Select the index with the maximum probability
+# results = np.argmax(results, axis=1)
+#
 # results = pd.Series(results, name="Label")
 # submission = pd.concat([pd.Series(range(1,28001),name = "ImageId"),results],axis = 1)
 #
-# submission.to_csv("test_mnist_data_results.csv",index=False)
+# submission.to_csv("new_mnist_data_results.csv",index=False)
+
+
+
